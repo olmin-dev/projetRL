@@ -7,26 +7,45 @@ from rl.policy import EpsGreedyQPolicy
 from rl.memory import SequentialMemory
 from keras.layers import BatchNormalization
 import gym
+from gym.envs.registration import registry, register, make, spec
 import numpy as np
 import itertools as it
 import tensorflow as tf
 import keras
 from keras.models import model_from_json
 
-action_space = [[ -1.0, 0.0, 0.0 ],  [ +1.0, 0.0, 0.0 ], [ 0.0, 0.0, 0.8 ], [ 0.0, 1.0, 0.8 ], [ -1.0, 1.0, 0.0 ], [ -0.5, 0.5, 0.0 ],  [ -1.0, 0.5, 0.8 ],[ 1.0, 1.0, 0.0 ], [ 0.5, 0.5, 0.0 ],  [ 1.0, 0.5, 0.8 ]]
+action_space = [[ -1.0, 0.0, 0.0 ],  [ +1.0, 0.0, 0.0 ], [ 0.0, 0.0, 0.7 ], [ 0.0, 1.0, 0.1 ], [ -8.0, 7.0, 0.0 ], [ -0.5, 0.5, 0.0 ],  [ -8.0, 0.5, 0.5 ],[ 8.0, 7.0, 0.0 ], [ 0.5, 0.5, 0.0 ],  [ 8.0, 0.5, 0.5 ]]
+register(
+    id='CarRacing-v1',
+    entry_point='gym.envs.box2d:CarRacing',
+    max_episode_steps=2000,
+    reward_threshold=900,
+)
 
 class CarRacing:
     def __init__(self):
-        self.env = gym.make('CarRacing-v0')
+        self.env = gym.make('CarRacing-v1')
         self.env.action_space = action_space
         self.action_space = action_space
         self.observation_space = self.env.observation_space
+        self.nb_neg = 0
 
     def reset(self):
+        self.nb_neg = 0
+        self.nb_step = 0
         return self.env.reset()
 
     def step(self, action):
+        self.nb_step += 1
         obs, rew, done, info = self.env.step(self.action_space[action])
+        if(rew < 0) :
+            self.nb_neg += 1
+        if(rew> 0 ) :
+            self.nb_neg = 0
+        if(self.nb_neg >= 50) :
+            done = True
+            rew = -40
+            self.nb_neg = 0
         return obs, rew, done, info
 
     def set_state(self):
@@ -83,20 +102,20 @@ policy = EpsGreedyQPolicy()
 memory = SequentialMemory(limit=5000, window_length = 1)
 nb_actions = 10
 
-dqn = DQNAgent(model = model, memory = memory, nb_actions = nb_actions, nb_steps_warmup=300, target_model_update=1e-4,policy=policy)
+dqn = DQNAgent(model = model, memory = memory, nb_actions = nb_actions, nb_steps_warmup=100, target_model_update=1e-4,policy=policy)
 dqn.compile(Adam(lr=0.0001),metrics=['mse'])
 
-nb_steps = 1e6
 log_interval = 1e4
-for i in range(2):
-    dqn.fit(env,nb_steps=3000, log_interval=log_interval, verbose=1, nb_max_episode_steps=300)
+for i in range(20):
+    print(i, "\n")
+    dqn.fit(env,nb_steps=3000, log_interval=log_interval, verbose=1, nb_max_episode_steps=800, action_repetition=2)
     env.close()
 
-model_json = model.to_json()
-with open("model.json", "w") as json_file:
-    json_file.write(model_json)
-    model.save_weights("model.h5")
-    print("Saved model to disk")
+    model_json = model.to_json()
+    with open("model2.json", "w") as json_file:
+        json_file.write(model_json)
+        model.save_weights("model2.h5")
+        print("Saved model to disk")
 
-dqn.test(env, nb_episodes=5, visualize=True,nb_max_episode_steps=2000)
+dqn.test(env, nb_episodes=5, visualize=True,nb_max_episode_steps=10000, action_repetition=2)
 env.close()
