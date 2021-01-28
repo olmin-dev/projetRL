@@ -30,7 +30,7 @@ class CarRacing:
         self.action_space = action_space
         self.observation_space = self.env.observation_space
         self.nb_neg = 0
-        self.critical_neg = 50
+        self.critical_neg = 30
         self.critical_punition = -40
 
     def reset(self):
@@ -72,44 +72,44 @@ class CarRacing:
 env = CarRacing()
 env.reset()
 
-# # load json and create model
-# json_file = open('./model.json', 'r')
-# loaded_model_json = json_file.read()
-# json_file.close()
-# loaded_model = tf.keras.models.model_from_json(loaded_model_json)
-# # load weights into new model
-# loaded_model.load_weights("./model.h5")
-# print("Loaded model from disk")
-# loaded_model.compile(loss='mse', optimizer='adam')
-# model = loaded_model
+# load json and create model
+json_file = open('./model2.json', 'r')
+loaded_model_json = json_file.read()
+json_file.close()
+loaded_model = tf.keras.models.model_from_json(loaded_model_json)
+# load weights into new model
+loaded_model.load_weights("./model2.h5")
+print("Loaded model from disk")
+loaded_model.compile(loss='mse', optimizer='adam')
+model = loaded_model
 
 # print("State Space {}".format(env.P[331]))
 
-model = Sequential(name='rvoum')
-model.add(Reshape((96,96,3),input_shape = (1,96,96,3)))
-model.add(Conv2D(filters=32, kernel_size=(3, 3), strides = 3,activation="relu", input_shape=(1,96,96,3)))
-model.add(Flatten())
-model.add(Dense(3,activation="selu"))
-#model.add(Embedding(500,6,input_length = 1, name='Embedding'))
-model.add(Reshape((3,),name='Reshape'))
-model = Sequential()
-model.add(Reshape((96,96,3),input_shape = (1,96,96,3)))
-model.add(Conv2D(filters=6, kernel_size=(7, 7), strides=3, activation='relu', input_shape=(96, 96, 3)))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Conv2D(filters=12, kernel_size=(4, 4), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Flatten())
-model.add(Dense(216, activation='relu'))
-model.add(Dense(16, activation=None))
-model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001, epsilon=1e-8))
-model.summary()
+# model = Sequential(name='rvoum')
+# model.add(Reshape((96,96,3),input_shape = (1,96,96,3)))
+# model.add(Conv2D(filters=32, kernel_size=(3, 3), strides = 3,activation="relu", input_shape=(1,96,96,3)))
+# model.add(Flatten())
+# model.add(Dense(3,activation="selu"))
+# #model.add(Embedding(500,6,input_length = 1, name='Embedding'))
+# model.add(Reshape((3,),name='Reshape'))
+# model = Sequential()
+# model.add(Reshape((96,96,3),input_shape = (1,96,96,3)))
+# model.add(Conv2D(filters=6, kernel_size=(7, 7), strides=3, activation='relu', input_shape=(96, 96, 3)))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
+# model.add(Conv2D(filters=12, kernel_size=(4, 4), activation='relu'))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
+# model.add(Flatten())
+# model.add(Dense(216, activation='relu'))
+# model.add(Dense(16, activation=None))
+# model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.0001, epsilon=1e-8))
+# model.summary()
 
 
 policy = EpsGreedyQPolicy()
 memory = SequentialMemory(limit=5000, window_length = 1)
 nb_actions = 16
 
-dqn = DQNAgent(model = model, memory = memory, nb_actions = nb_actions, nb_steps_warmup=100, target_model_update=1e-4,policy=policy)
+dqn = DQNAgent(model = model, memory = memory, nb_actions = nb_actions, nb_steps_warmup=10, target_model_update=1e-5,policy=policy)
 dqn.compile(Adam(lr=0.0001),metrics=['mse'])
 
 log_interval = 1e4
