@@ -52,7 +52,7 @@ class CarRacing:
         return obs, rew, done, info
 
     def init_test(self):
-        self.critical_neg = 200
+        self.critical_neg = 100
         self.critical_punition = 0
 
     def set_state(self):
@@ -73,12 +73,12 @@ env = CarRacing()
 env.reset()
 
 # load json and create model
-json_file = open('./model2.json', 'r')
+json_file = open('./saved/model2.json', 'r')
 loaded_model_json = json_file.read()
 json_file.close()
 loaded_model = tf.keras.models.model_from_json(loaded_model_json)
 # load weights into new model
-loaded_model.load_weights("./model2.h5")
+loaded_model.load_weights("./saved/model2.h5")
 print("Loaded model from disk")
 loaded_model.compile(loss='mse', optimizer='adam')
 model = loaded_model
@@ -113,7 +113,7 @@ dqn = DQNAgent(model = model, memory = memory, nb_actions = nb_actions, nb_steps
 dqn.compile(Adam(lr=0.0001),metrics=['mse'])
 
 log_interval = 1e4
-for i in range(5):
+for i in range(0):
     print(i, "\n")
     dqn.fit(env,nb_steps=3000, log_interval=log_interval, verbose=1, nb_max_episode_steps=1000, action_repetition=3)
     env.close()
@@ -126,5 +126,5 @@ for i in range(5):
 
 env.init_test()
 
-dqn.test(env, nb_episodes=5, visualize=True,nb_max_episode_steps=10000, action_repetition=3)
+dqn.test(env, nb_episodes=5, visualize=True,nb_max_episode_steps=10000, action_repetition=2)
 env.close()
